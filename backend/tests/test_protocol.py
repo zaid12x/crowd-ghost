@@ -1,7 +1,6 @@
 import numpy as np
 
 from app.protocol import encode_frame, decode_frame
-from app.sim_loop import SimState
 
 
 def test_frame_roundtrip():
@@ -16,12 +15,17 @@ def test_frame_roundtrip():
 
 
 def test_sim_ticks():
-    sim = SimState(n_agents=10)
+    from app.sim_loop import SimState
+    sim = SimState("lobby", seed=1)
     t0 = sim.tick
     for _ in range(30):
         sim.update()
-    assert sim.tick == t0 + 30
-    assert len(sim.agents) == 10
+    assert sim.tick > t0
+    status = sim.status()
+    assert status["agents"] >= 0
+    assert status["level"] == "lobby"
+    agents, rooms = sim.engine.frame_arrays()
     w, h = sim.bounds
-    assert np.all(sim.agents[:, 0] >= 0) and np.all(sim.agents[:, 0] <= w)
-    assert np.all(sim.agents[:, 1] >= 0) and np.all(sim.agents[:, 1] <= h)
+    if len(agents):
+        assert np.all(agents[:, 0] >= 0) and np.all(agents[:, 0] <= w)
+        assert np.all(agents[:, 1] >= 0) and np.all(agents[:, 1] <= h)

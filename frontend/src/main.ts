@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { GhostSocket } from './net/ws';
 
-const WORLD_W = 40;
-const WORLD_H = 30;
+let WORLD_W = 40;
+let WORLD_H = 30;
 
 const hud = document.getElementById('hud')!;
 const app = document.getElementById('app')!;
@@ -19,11 +19,12 @@ const camera = new THREE.OrthographicCamera(-WORLD_W / 2, WORLD_W / 2, WORLD_H /
 camera.position.set(WORLD_W / 2, WORLD_H / 2, 50);
 camera.lookAt(WORLD_W / 2, WORLD_H / 2, 0);
 
-// ground plane
+// unit ground, scaled to world bounds (size arrives from /api/health)
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(WORLD_W, WORLD_H),
+  new THREE.PlaneGeometry(1, 1),
   new THREE.MeshBasicMaterial({ color: 0x0a120a })
 );
+ground.scale.set(WORLD_W, WORLD_H, 1);
 ground.position.set(WORLD_W / 2, WORLD_H / 2, -0.5);
 scene.add(ground);
 
@@ -39,6 +40,25 @@ scene.add(dots);
 
 const dummy = new THREE.Object3D();
 
+function layoutWorld(w: number, h: number) {
+  WORLD_W = w; WORLD_H = h;
+  camera.left = -w / 2; camera.right = w / 2; camera.top = h / 2; camera.bottom = -h / 2;
+  camera.position.set(w / 2, h / 2, 50);
+  camera.lookAt(w / 2, h / 2, 0);
+  camera.updateProjectionMatrix();
+  ground.scale.set(w, h, 1);
+  ground.position.set(w / 2, h / 2, -0.5);
+}
+
+let levelName = '';
+fetch('/api/health')
+  .then((r) => r.json())
+  .then((h) => {
+    if (h?.bounds) layoutWorld(h.bounds[0], h.bounds[1]);
+    levelName = h?.name ?? '';
+  })
+  .catch(() => {});
+
 const socket = new GhostSocket();
 socket.onStatus = (s) => { hud.textContent = `CROWD GHOST\n${s}`; };
 socket.onFrame = (f) => {
@@ -49,7 +69,7 @@ socket.onFrame = (f) => {
     dots.setMatrixAt(i, dummy.matrix);
   }
   dots.instanceMatrix.needsUpdate = true;
-  hud.textContent = `CROWD GHOST\nTICK ${f.tick}\nAGENTS ${f.nAgents}\nFPS 60 (target)`;
+  hud.textContent = `CROWD GHOST\n${levelName}\nTICK ${f.tick}\nAGENTS ${f.nAgents}`;
 };
 socket.connect();
 (window as unknown as { __ghost: unknown }).__ghost = { camera, renderer, scene };

@@ -46,6 +46,7 @@ class Agent:
     dwell_x: float = 0.0
     dwell_y: float = 0.0
     queue_slot: int = 0
+    queue_since: float | None = None
 
 
 def _p_choice(P: np.ndarray, room: int, rng: np.random.Generator):
@@ -96,6 +97,10 @@ class PhysicsEngine:
         self._next_id = 0
         self.waiting_total = 0
         self.peak_waiting = 0
+        self.total_queue_time = 0.0
+        # door admission rate: width * 1.3 persons/second (single-file flow)
+        self.door_rate = {d.id: d.width * 1.3 for d in self.fp.doors}
+        self.door_tokens = {d.id: d.width * 1.3 for d in self.fp.doors}
         self._walls_arr = np.array(
             [(w[0][0], w[0][1], w[1][0], w[1][1]) for w in self.fp.walls], dtype=float
         ) if self.fp.walls else np.zeros((0, 4))
@@ -243,6 +248,10 @@ class PhysicsEngine:
             self._lam_rate[k] = (1.0 - alpha) * self._lam_rate[k] + alpha * rate_now
             self._adm_tick[k] = 0
 
+        # door admission rate: width * 1.3 persons/second (single-file flow)
+        for d_id, rate in self.door_rate.items():
+            self.door_tokens[d_id] = min(self.door_tokens[d_id] + rate * dt, rate)
+
         occupancy = self.occupancy()
         sub_dt = dt / SUBSTEPS
         for _ in range(SUBSTEPS):
@@ -373,6 +382,7 @@ class PhysicsEngine:
             if a.state == "queue":
                 nxt = a.goal_room
                 if nxt is None or self.evacuation or occ[nxt] < self.fp.rooms[nxt].capacity:
+                    self._account_queue_exit(a)
                     a.state = "walk"
                 continue
             if a.state != "walk" or a.target_door is None:
@@ -381,16 +391,29 @@ class PhysicsEngine:
             reach = 0.75 if a.exiting else 0.6  # stepping through an exit counts sooner
             if math.hypot(a.x - door.x, a.y - door.y) < reach:
                 if a.exiting:
+                    self._account_queue_exit(a)
                     a.state = "gone"
                     self.exited += 1
                     continue
                 nxt = a.goal_room
                 if nxt is not None and (self.evacuation or occ[nxt] < self.fp.rooms[nxt].capacity):
-                    occ[nxt] += 1
-                    self._enter_room(a, nxt)
+                    if self.door_tokens.get(door.id, 0.0) >= 1.0:
+                        self.door_tokens[door.id] -= 1.0
+                        occ[nxt] += 1
+                        self._enter_room(a, nxt)
+                    # else: door saturated — agent keeps pressing (counts as door backpressure)
                 else:
                     a.state = "queue"
                     a.queue_slot = len(door_waiting.get(door.id, ()))
+                    a.queue_since = self.time
+
+    def _account_queue_exit(self, a: Agent):
+        if getattr(a, "queue_since", None) is not None:
+            self.total_queue_time += self.time - a.queue_since
+            a.queue_since = None
+
+    def mean_queue_seconds_per_exit(self) -> float:
+        return self.total_queue_time / max(self.exited, 1)
 
     # ---------- wire format ----------
     def frame_arrays(self):

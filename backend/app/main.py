@@ -9,7 +9,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.sim_loop import TICK_HZ, DT, SimState, LEVELS_DIR
+from app.sim_loop import TICK_HZ, DT, SimState, LEVELS_DIR, load_level
 
 app = FastAPI(title="CROWD GHOST", version="0.1.0")
 
@@ -33,6 +33,33 @@ def levels():
         except Exception:
             continue
     return {"levels": out}
+
+
+@app.get("/api/geometry")
+def geometry(id: str | None = None):
+    """Wall segments, room polygons, doors for rendering — read from the level file."""
+    from app.physics.floorplan import Floorplan
+
+    level_id = id or _sim.level_id
+    try:
+        level = load_level(level_id)
+    except FileNotFoundError:
+        return JSONResponse({"error": f"unknown level '{level_id}'"}, status_code=404)
+    fp = Floorplan.from_dict(level)
+    return {
+        "id": level_id,
+        "bounds": level["bounds"],
+        "walls": [[w[0][0], w[0][1], w[1][0], w[1][1]] for w in fp.walls],
+        "room_walls": [[ [p[0], p[1]] for p in r.polygon ] for r in fp.rooms],
+        "rooms": [
+            {"id": r.id, "name": r.name, "polygon": [list(p) for p in r.polygon], "capacity": r.capacity}
+            for r in fp.rooms
+        ],
+        "doors": [
+            {"id": d.id, "rooms": list(d.rooms), "x": d.x, "y": d.y, "angle": d.angle, "width": d.width}
+            for d in fp.doors
+        ],
+    }
 
 
 @app.websocket("/ws")

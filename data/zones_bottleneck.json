@@ -1,0 +1,10 @@
+{
+  "note": "Zones in PIXEL coordinates of the 960x540 synthetic bottleneck clip (18 px/m, x offset 66).",
+  "entry": [[100, 207, 190, 333]],
+  "service": [[363, 135, 597, 405]],
+  "rooms": {
+    "lobby": [[36, 36, 354, 504]],
+    "exhibit": [[355, 126, 606, 414]],
+    "shop": [[607, 126, 924, 414]]
+  }
+}

@@ -10,3 +10,5 @@ data/clips/*.mp4
 .DS_Store
 
 backend/app/static/
+
+*.pt

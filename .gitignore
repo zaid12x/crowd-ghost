@@ -8,3 +8,5 @@ results/*.json
 !results/.gitkeep
 data/clips/*.mp4
 .DS_Store
+
+backend/app/static/

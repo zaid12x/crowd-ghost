@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+frontend/dist/
+results/*.png
+results/*.json
+!results/.gitkeep
+data/clips/*.mp4
+.DS_Store

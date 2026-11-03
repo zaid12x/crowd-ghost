@@ -1,0 +1,10 @@
+# stage 2
+pytest
+fastapi
+uvicorn
+numpy
+scipy
+numba
+matplotlib
+# stage 7/8
+rich

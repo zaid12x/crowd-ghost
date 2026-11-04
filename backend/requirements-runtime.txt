@@ -1,0 +1,4 @@
+# Runtime-only dependencies (Dockerfile). Dev/test extras stay in requirements.txt.
+fastapi
+uvicorn
+numpy

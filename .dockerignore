@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+frontend/node_modules
+frontend/dist
+backend/app/static
+backend/__pycache__
+**/__pycache__
+backend/.pytest_cache
+results/*.png
+results/vision.json
+data/clips/*.mp4
+*.pt
+STAGE_*.md
+__pycache__

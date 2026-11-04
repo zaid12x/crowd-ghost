@@ -223,6 +223,9 @@ body.split #paneB { display: block; }
 #statusbar .warn { color: var(--amber); }
 #statusbar .red { color: var(--hazard); }
 
+.placard-meta .cardbtn { font-size: 8px; padding: 3px 8px; border-color: var(--phosphor-dim); margin-left: 4px; }
+.placard-meta .cardbtn:hover { border-color: var(--phosphor); }
+
 /* scrollbars — thin, industrial */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--plate-edge-hi); }

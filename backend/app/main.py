@@ -1,6 +1,7 @@
 """FastAPI app: HTTP + WebSocket endpoint (binary frames at 30 Hz)."""
 
 import asyncio
+import hashlib
 import json
 import os
 import time
@@ -78,6 +79,49 @@ def curator():
         "lines": [{"severity": l.severity, "text": l.text} for l in lines],
         "graph": graph,
     }
+
+
+@app.get("/api/score")
+def score():
+    """Live score of THIS run: measured (never model-predicted) wait/crush, model rooms-seen."""
+    import numpy as np
+
+    from app.optimize.objective import rooms_seen_mean
+    from app.scoring import crush_fraction, score_queueing
+
+    eng = _sim.engine
+    gamma = np.zeros(len(eng.fp.rooms))
+    gamma[0] = float(eng.gamma)
+    P = np.array(_sim.level["P"], dtype=float)
+    rooms_seen = float(rooms_seen_mean(P, gamma))
+    mean_wait = float(eng.mean_queue_seconds_per_exit())
+    crush_frac = crush_fraction(eng.crush_seconds, eng.agent_seconds)
+    caps = [r.capacity for r in eng.fp.rooms]
+    door_widths = {d.id: d.width for d in eng.fp.doors}
+    layout_id = hashlib.md5(
+        json.dumps(
+            {"g": eng.gamma, "caps": caps, "w": door_widths, "seed": _sim.seed},
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()[:6]
+    out = {
+        "level": _sim.level_id,
+        "layout_id": layout_id,
+        "tick": _sim.tick,
+        "mean_wait_s": round(mean_wait, 3),
+        "crush_frac": round(crush_frac, 4),
+        "rooms_seen": round(rooms_seen, 2),
+        "agent_seconds": round(eng.agent_seconds, 1),
+        "kind": "evacuation" if _sim.level.get("evacuation") else "queue",
+    }
+    if _sim.level.get("evacuation"):
+        agents_left = len(eng.agents)
+        out["time_to_clear_s"] = round(eng.time, 2) if agents_left == 0 else None
+        out["agents_left"] = agents_left
+        out["score"] = None  # evacuated-time metric instead of the queueing score
+    else:
+        out["score"] = score_queueing(mean_wait, crush_frac, rooms_seen)
+    return out
 
 
 @app.websocket("/ws")

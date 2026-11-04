@@ -1,0 +1,367 @@
+{
+  "levels": [
+    {
+      "level": "bottleneck",
+      "name": "THE BOTTLENECK \u2014 ONE HOT EXHIBIT",
+      "seconds_search": 59.9420371055603,
+      "search": {
+        "candidates": 242,
+        "des_reps": 6,
+        "t_end": 45.0
+      },
+      "default": {
+        "des_wait": 6.525553070715599,
+        "des_feasible": false,
+        "rho_max": Infinity,
+        "physics": {
+          "mean_queue_s_per_exit": 50.29999999999967,
+          "exited": 3,
+          "spawned": 223,
+          "peak_waiting": 12,
+          "wall_s": 23.112107399851084
+        },
+        "candidate": {
+          "entry_cap": 4.5,
+          "capacities": [
+            90,
+            6,
+            70
+          ],
+          "routing_delta": {},
+          "widths": {},
+          "label": "default"
+        }
+      },
+      "naive": {
+        "des_wait": 0.03615361208789454,
+        "des_feasible": true,
+        "rho_max": 0.9818181818181819,
+        "physics": {
+          "mean_queue_s_per_exit": 0.0,
+          "exited": 4,
+          "spawned": 217,
+          "peak_waiting": 0,
+          "wall_s": 20.66572710033506
+        },
+        "candidate": {
+          "entry_cap": 4.5,
+          "capacities": [
+            56,
+            55,
+            55
+          ],
+          "routing_delta": {},
+          "widths": {},
+          "label": "naive (equal capacities)"
+        }
+      },
+      "optimized": {
+        "des_wait": 0.0,
+        "des_feasible": true,
+        "rho_max": 0.4378378378378378,
+        "physics": {
+          "mean_queue_s_per_exit": 0.0,
+          "exited": 9,
+          "spawned": 177,
+          "peak_waiting": 0,
+          "wall_s": 14.358885699883103
+        },
+        "candidate": {
+          "entry_cap": 4.05,
+          "capacities": [
+            26,
+            111,
+            29
+          ],
+          "routing_delta": {
+            "0": -0.075
+          },
+          "widths": {
+            "d0": 2.1,
+            "entrance": 2.4
+          },
+          "label": "search"
+        },
+        "candidate_id": "cap=[26,111,29] entry=4.05 widths={'d0': 2.1, 'entrance': 2.4} nudge={0: -0.075}"
+      },
+      "improvement_vs_default_pct_des": 100.0,
+      "improvement_vs_naive_pct_des": 100.0,
+      "improvement_vs_default_pct_physics_queue": 100.0,
+      "improvement_vs_naive_pct_physics_queue": 0.0,
+      "beats_default_des": true,
+      "beats_naive_des": true,
+      "beats_default_physics": true,
+      "beats_naive_physics": false,
+      "top5": [
+        {
+          "candidate_id": "cap=[26,111,29] entry=4.05 widths={'d0': 2.1, 'entrance': 2.4} nudge={0: -0.075}",
+          "des_wait": 0.0,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[44,69,53] entry=4.05 widths={} nudge={0: 0.15}",
+          "des_wait": 0.0,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[23,66,77] entry=4.05 widths={'d0': 1.6, 'entrance': 2.9} nudge={0: 0.15}",
+          "des_wait": 0.0,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[38,91,37] entry=4.50 widths={'d0': 2.1, 'entrance': 2.4} nudge={}",
+          "des_wait": 0.0,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[53,80,33] entry=4.50 widths={'d0': 1.6, 'entrance': 2.9} nudge={}",
+          "des_wait": 0.0,
+          "feasible": true
+        }
+      ]
+    },
+    {
+      "level": "lobby",
+      "name": "LOBBY \u2014 VERNISSAGE, FULL HOUSE",
+      "seconds_search": 56.8399019241333,
+      "search": {
+        "candidates": 242,
+        "des_reps": 6,
+        "t_end": 120.0
+      },
+      "default": {
+        "des_wait": 0.35108686726201643,
+        "des_feasible": true,
+        "rho_max": 0.9,
+        "physics": {
+          "mean_queue_s_per_exit": 0.0,
+          "exited": 17,
+          "spawned": 177,
+          "peak_waiting": 0,
+          "wall_s": 16.42179480008781
+        },
+        "candidate": {
+          "entry_cap": 5.0,
+          "capacities": [
+            34,
+            50,
+            28
+          ],
+          "routing_delta": {},
+          "widths": {},
+          "label": "default"
+        }
+      },
+      "naive": {
+        "des_wait": 2.934603024392923,
+        "des_feasible": false,
+        "rho_max": Infinity,
+        "physics": {
+          "mean_queue_s_per_exit": 0.0,
+          "exited": 17,
+          "spawned": 177,
+          "peak_waiting": 0,
+          "wall_s": 16.435111400671303
+        },
+        "candidate": {
+          "entry_cap": 5.0,
+          "capacities": [
+            38,
+            37,
+            37
+          ],
+          "routing_delta": {},
+          "widths": {},
+          "label": "naive (equal capacities)"
+        }
+      },
+      "optimized": {
+        "des_wait": 0.0,
+        "des_feasible": true,
+        "rho_max": 0.7,
+        "physics": {
+          "mean_queue_s_per_exit": 0.0,
+          "exited": 9,
+          "spawned": 162,
+          "peak_waiting": 0,
+          "wall_s": 13.516015100292861
+        },
+        "candidate": {
+          "entry_cap": 3.5,
+          "capacities": [
+            35,
+            45,
+            32
+          ],
+          "routing_delta": {
+            "0": -0.15
+          },
+          "widths": {
+            "d0": 3.4,
+            "entrance": 2.4000000000000004
+          },
+          "label": "search"
+        },
+        "candidate_id": "cap=[35,45,32] entry=3.50 widths={'d0': 3.4, 'entrance': 2.4000000000000004} nudge={0: -0.15}"
+      },
+      "improvement_vs_default_pct_des": 100.0,
+      "improvement_vs_naive_pct_des": 100.0,
+      "improvement_vs_default_pct_physics_queue": 0.0,
+      "improvement_vs_naive_pct_physics_queue": 0.0,
+      "beats_default_des": true,
+      "beats_naive_des": true,
+      "beats_default_physics": false,
+      "beats_naive_physics": false,
+      "top5": [
+        {
+          "candidate_id": "cap=[35,45,32] entry=3.50 widths={'d0': 3.4, 'entrance': 2.4000000000000004} nudge={0: -0.15}",
+          "des_wait": 0.0,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[34,42,36] entry=3.50 widths={'d0': 3.4, 'entrance': 2.4000000000000004} nudge={0: 0.15}",
+          "des_wait": 0.0,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[36,46,30] entry=3.50 widths={} nudge={0: -0.075}",
+          "des_wait": 0.00012235565862400258,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[39,43,30] entry=3.50 widths={'d0': 3.4, 'entrance': 2.4000000000000004} nudge={0: 0.15}",
+          "des_wait": 0.00012235565862400258,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[37,46,29] entry=3.50 widths={'d0': 3.1, 'entrance': 2.7} nudge={0: 0.15}",
+          "des_wait": 0.001275603069850911,
+          "feasible": true
+        }
+      ]
+    },
+    {
+      "level": "rush",
+      "name": "THE RUSH \u2014 OPENING NIGHT",
+      "seconds_search": 85.68867468833923,
+      "search": {
+        "candidates": 242,
+        "des_reps": 6,
+        "t_end": 40.0
+      },
+      "default": {
+        "des_wait": 0.06238178838227032,
+        "des_feasible": true,
+        "rho_max": 0.9,
+        "physics": {
+          "mean_queue_s_per_exit": 2.3786666666665344,
+          "exited": 25,
+          "spawned": 284,
+          "peak_waiting": 12,
+          "wall_s": 27.773731499910355
+        },
+        "candidate": {
+          "entry_cap": 9.0,
+          "capacities": [
+            40,
+            30,
+            30,
+            30
+          ],
+          "routing_delta": {},
+          "widths": {},
+          "label": "default"
+        }
+      },
+      "naive": {
+        "des_wait": 0.6026617213532475,
+        "des_feasible": false,
+        "rho_max": Infinity,
+        "physics": {
+          "mean_queue_s_per_exit": 2.354545454545321,
+          "exited": 22,
+          "spawned": 280,
+          "peak_waiting": 10,
+          "wall_s": 28.168030300177634
+        },
+        "candidate": {
+          "entry_cap": 9.0,
+          "capacities": [
+            34,
+            32,
+            32,
+            32
+          ],
+          "routing_delta": {},
+          "widths": {},
+          "label": "naive (equal capacities)"
+        }
+      },
+      "optimized": {
+        "des_wait": 0.005259294763576968,
+        "des_feasible": true,
+        "rho_max": 0.864,
+        "physics": {
+          "mean_queue_s_per_exit": 1.3378787878787117,
+          "exited": 22,
+          "spawned": 282,
+          "peak_waiting": 7,
+          "wall_s": 23.806038099341094
+        },
+        "candidate": {
+          "entry_cap": 7.2,
+          "capacities": [
+            46,
+            22,
+            37,
+            25
+          ],
+          "routing_delta": {
+            "0": -0.075
+          },
+          "widths": {
+            "d0": 2.9,
+            "entrance": 3.5
+          },
+          "label": "search"
+        },
+        "candidate_id": "cap=[46,22,37,25] entry=7.20 widths={'d0': 2.9, 'entrance': 3.5} nudge={0: -0.075}"
+      },
+      "improvement_vs_default_pct_des": 91.569182448973,
+      "improvement_vs_naive_pct_des": 99.12732224774994,
+      "improvement_vs_default_pct_physics_queue": 43.75509580106,
+      "improvement_vs_naive_pct_physics_queue": 43.17889317889318,
+      "beats_default_des": true,
+      "beats_naive_des": true,
+      "beats_default_physics": true,
+      "beats_naive_physics": true,
+      "top5": [
+        {
+          "candidate_id": "cap=[46,22,37,25] entry=7.20 widths={'d0': 2.9, 'entrance': 3.5} nudge={0: -0.075}",
+          "des_wait": 0.005259294763576968,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[49,23,28,30] entry=6.30 widths={'d0': 3.4, 'entrance': 3.0} nudge={0: -0.075}",
+          "des_wait": 0.005438288300270065,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[40,31,26,33] entry=7.20 widths={'d0': 2.9, 'entrance': 3.5} nudge={0: 0.075}",
+          "des_wait": 0.016019949348867222,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[52,16,29,33] entry=6.30 widths={'d0': 2.9, 'entrance': 3.5} nudge={0: -0.15}",
+          "des_wait": 0.02545976652899602,
+          "feasible": true
+        },
+        {
+          "candidate_id": "cap=[39,28,29,34] entry=8.10 widths={} nudge={}",
+          "des_wait": 0.03535902733234012,
+          "feasible": true
+        }
+      ]
+    }
+  ]
+}

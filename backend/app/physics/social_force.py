@@ -28,6 +28,21 @@ B_WALL = 0.22
 WALL_RANGE = 0.55
 CELL = 1.5
 INTERACT = 1.6
+CRUSH_DENSITY = 4.0  # agents per m^2 above which the crush index counts agent-seconds
+
+
+def _polygon_area(polygon: list) -> float:
+    """Shoelace formula — room floor area in m^2."""
+    pts = list(polygon)
+    n = len(pts)
+    if n < 3:
+        return 1.0
+    acc = 0.0
+    for i in range(n):
+        x0, y0 = pts[i][0], pts[i][1]
+        x1, y1 = pts[(i + 1) % n][0], pts[(i + 1) % n][1]
+        acc += x0 * y1 - x1 * y0
+    return max(abs(acc) / 2.0, 1e-6)
 
 
 @dataclass
@@ -107,6 +122,10 @@ class PhysicsEngine:
         self._walls_arr = np.array(
             [(w[0][0], w[0][1], w[1][0], w[1][1]) for w in self.fp.walls], dtype=float
         ) if self.fp.walls else np.zeros((0, 4))
+        # crush-index accumulators: agent-seconds above 4 agents/m^2 per room
+        self._room_area = [_polygon_area(r.polygon) for r in self.fp.rooms]
+        self.agent_seconds = 0.0
+        self.crush_seconds = 0.0
         for _ in range(int(level.get("prefill", 0))):
             self._prefill_agent()
 
@@ -261,6 +280,11 @@ class PhysicsEngine:
             self.door_tokens[d_id] = min(self.door_tokens[d_id] + rate * dt, rate)
 
         occupancy = self.occupancy()
+        self.agent_seconds += len(self.agents) * dt
+        for k in range(len(self.fp.rooms)):
+            occ = occupancy[k]
+            if occ > 0 and occ / self._room_area[k] > CRUSH_DENSITY:
+                self.crush_seconds += occ * dt
         sub_dt = dt / SUBSTEPS
         for _ in range(SUBSTEPS):
             self._forces_and_integrate(sub_dt, occupancy)

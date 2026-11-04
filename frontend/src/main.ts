@@ -27,7 +27,7 @@ el.innerHTML = `
       </div>
     </div>
     <div class="placard-center">HALL OF <span class="hall" id="placardHall">THE BOTTLENECK</span></div>
-    <div class="placard-meta"><span>CAT. <b>CG-04</b></span><span id="placardFps"><span class="dot"></span>60 FPS</span></div>
+    <div class="placard-meta"><span>CAT. <b>CG-04</b></span><span id="placardFps"><span class="dot"></span>60 FPS</span><button class="ghostbtn cardbtn" id="cardBtn" title="Export a PNG ghost card of this run">⤓ CARD</button></div>
   </header>
 
   <main id="stage">
@@ -121,6 +121,19 @@ async function boot() {
     document.getElementById('placardHall')!.textContent = levelName;
     paneA.setGeometry(geometry);
     telemetry.setRooms(geometry.rooms.map((r) => r.name.toUpperCase()));
+    // Level list comes from the server — new JSON levels appear without a frontend rebuild.
+    try {
+      const lv = await fetch('/api/levels').then((r) => r.json());
+      const sel = document.getElementById('levelSelect') as HTMLSelectElement;
+      sel.innerHTML = '';
+      for (const l of lv.levels ?? []) {
+        const opt = document.createElement('option');
+        opt.value = l.id;
+        opt.textContent = String(l.name ?? l.id).toUpperCase();
+        sel.appendChild(opt);
+      }
+      if (health.level) sel.value = health.level;
+    } catch { /* keep the static fallback options */ }
     buildSliders(health);
     paneB = new GhostPane(paneBEl, { withAscii: false, caption: 'OPTIMIZED' });
     paneB.setGeometry(geometry);
@@ -233,7 +246,7 @@ socket.onFrame = (f: Frame) => {
   if (fpsEl && (f.tick & 7) === 0) fpsEl.innerHTML = `<span class="dot"></span>${Math.round(fps)} FPS · T${f.tick}`;
 };
 socket.connect();
-(window as unknown as { __ghost: unknown }).__ghost = { paneA, get paneB() { return paneB; }, telemetry, dial };
+(window as unknown as { __ghost: unknown }).__ghost = { paneA, get paneB() { return paneB; }, telemetry, dial, exportCard: () => exportCard() };
 
 // ---------- modes ----------
 const modeBar = document.getElementById('modebar')!;
@@ -284,6 +297,102 @@ async function refreshCurator() {
 setInterval(() => { if (curatorOn) refreshCurator(); }, 2000);
 document.getElementById('whyBtn')!.addEventListener('click', () => { document.getElementById('whyOverlay')!.style.display = 'flex'; });
 document.getElementById('whyClose')!.addEventListener('click', () => { document.getElementById('whyOverlay')!.style.display = 'none'; });
+
+// ---------- ghost card (PNG poster export) ----------
+async function exportCard(): Promise<string> {
+  const s = await fetch('/api/score').then((r) => r.json());
+  await document.fonts.ready;
+  const src = paneA.snapshotCanvas();
+  const levelLabel = (levelName || 'UNKNOWN HALL').toUpperCase();
+  const c = document.createElement('canvas');
+  c.width = 1200;
+  c.height = 630;
+  const ctx = c.getContext('2d')!;
+
+  // substrate + double frame
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, 1200, 630);
+  ctx.strokeStyle = '#4af626';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(12, 12, 1176, 606);
+  ctx.strokeStyle = '#22261f';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(22, 22, 1156, 586);
+
+  // left: the live ASCII ghost
+  const box = { x: 36, y: 88, w: 716, h: 470 };
+  ctx.fillStyle = '#050805';
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  const fit = Math.min(box.w / src.width, box.h / src.height);
+  const dw = src.width * fit, dh = src.height * fit;
+  ctx.drawImage(src, box.x + (box.w - dw) / 2, box.y + (box.h - dh) / 2, dw, dh);
+  ctx.strokeStyle = '#2e332a';
+  ctx.strokeRect(box.x, box.y, box.w, box.h);
+  ctx.fillStyle = '#8b8f82';
+  ctx.font = '9px "IBM Plex Mono", monospace';
+  ctx.fillText('[ GHOST — CURRENT RUN ]', box.x, box.y - 8);
+  ctx.fillText(`TICK ${s.tick}`, box.x + box.w - ctx.measureText(`TICK ${s.tick}`).width, box.y - 8);
+
+  // right column
+  const rx = 800;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#4af626';
+  ctx.font = '64px VT323, "IBM Plex Mono", monospace';
+  ctx.fillText('CROWD GHOST', rx, 96);
+  ctx.fillStyle = '#8b8f82';
+  ctx.font = '8px "IBM Plex Mono", monospace';
+  ctx.fillText('EVERY CROWD LEAVES A GHOST. FIX IT.', rx, 116);
+
+  ctx.fillStyle = '#ffb000';
+  ctx.font = '17px "IBM Plex Mono", monospace';
+  ctx.fillText(levelLabel, rx, 158);
+  ctx.strokeStyle = '#22261f';
+  ctx.beginPath(); ctx.moveTo(rx, 172); ctx.lineTo(1170, 172); ctx.stroke();
+
+  ctx.fillStyle = '#8b8f82';
+  ctx.font = '9px "IBM Plex Mono", monospace';
+  ctx.fillText(s.kind === 'evacuation' ? 'EVACUATION — TIME TO CLEAR' : 'QUEUEING SCORE', rx, 200);
+  ctx.fillStyle = s.kind === 'evacuation' ? '#ffb000' : (s.score ?? 0) >= 70 ? '#4af626' : (s.score ?? 0) >= 40 ? '#ffb000' : '#e61919';
+  ctx.font = '88px VT323, "IBM Plex Mono", monospace';
+  ctx.fillText(s.kind === 'evacuation' ? (s.time_to_clear_s != null ? `${s.time_to_clear_s.toFixed(1)}s` : 'RUNNING') : String(s.score ?? 0), rx, 290);
+
+  const rows: Array<[string, string]> = s.kind === 'evacuation'
+    ? [
+        ['AGENTS LEFT', String(s.agents_left ?? '—')],
+        ['AGENTS/M^2 PEAK', s.crush_frac != null ? `${(s.crush_frac * 100).toFixed(1)}% AGT-SEC` : '—'],
+        ['SEED', '7'],
+      ]
+    : [
+        ['MEAN WAIT / EXIT', `${s.mean_wait_s.toFixed(2)} s`],
+        ['CRUSH INDEX', `${(s.crush_frac * 100).toFixed(1)}% AGT-S >4/M2`],
+        ['ROOMS SEEN/VISITOR', s.rooms_seen.toFixed(2)],
+        ['LAYOUT ID', `CG-${s.layout_id.toUpperCase()}`],
+      ];
+  let y = 330;
+  for (const [k, v] of rows) {
+    ctx.fillStyle = '#8b8f82';
+    ctx.font = '8px "IBM Plex Mono", monospace';
+    ctx.fillText(k, rx, y);
+    ctx.fillStyle = '#eaeaea';
+    ctx.font = '13px "IBM Plex Mono", monospace';
+    ctx.fillText(v, rx, y + 16);
+    y += 44;
+  }
+
+  ctx.fillStyle = '#4c5045';
+  ctx.font = '8px "IBM Plex Mono", monospace';
+  ctx.fillText('MODEL: JACKSON NETWORK + ERLANG C — VALIDATED vs DES', rx, 556);
+  ctx.fillText(`SEED 7 · ${new Date().toISOString().slice(0, 10)} · CROWD GHOST v1.0`, rx, 574);
+
+  const a = document.createElement('a');
+  a.download = `ghost-card-${s.level}-${s.layout_id}.png`;
+  a.href = c.toDataURL('image/png');
+  (window as unknown as { __card?: HTMLCanvasElement }).__card = c;
+  a.click();
+  return 'ok';
+}
+
+document.getElementById('cardBtn')!.addEventListener('click', () => { exportCard().catch((e) => console.error('ghost card failed', e)); });
 
 addEventListener('keydown', (e) => {
   // Ignore key echoes replayed by the browser right after boot (same quirk

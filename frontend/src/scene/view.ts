@@ -30,7 +30,8 @@ export class GhostPane {
 
   constructor(container: HTMLElement, opts: { withAscii: boolean; caption: string }) {
     this.withAscii = opts.withAscii;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    // preserveDrawingBuffer lets the ghost-card export capture the ASCII frame on demand
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setClearColor(0x050805, 1);
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
@@ -121,6 +122,12 @@ export class GhostPane {
     } else {
       group.visible = true; wallSolids.visible = false; floors.visible = false; strokes.visible = true;
     }
+  }
+
+  /** Force a render and return the canvas, for the ghost-card poster export. */
+  snapshotCanvas(): HTMLCanvasElement {
+    this.render(performance.now());
+    return this.renderer.domElement;
   }
 
   update(f: PaneFrame) {

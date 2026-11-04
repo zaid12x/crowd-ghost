@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -14,6 +15,7 @@ from app.sim_loop import TICK_HZ, DT, SimState, LEVELS_DIR, load_level
 app = FastAPI(title="CROWD GHOST", version="0.1.0")
 
 _sim = SimState()
+_last_step = 0.0  # monotonic timestamp of the shared sim's last physics step
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -62,25 +64,55 @@ def geometry(id: str | None = None):
     }
 
 
+@app.get("/api/curator")
+def curator():
+    from app.curator.rules import advice, room_ascii_graph
+
+    status = _sim.status()
+    level = load_level(_sim.level_id)
+    level = {**level, "id": _sim.level_id}
+    lines = advice(_sim.level_id, level, status)
+    graph = room_ascii_graph(level, status)
+    return {
+        "level": _sim.level_id,
+        "lines": [{"severity": l.severity, "text": l.text} for l in lines],
+        "graph": graph,
+    }
+
+
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):
     await ws.accept()
 
     async def sender():
+        global _last_step
         while True:
-            _sim.update(DT)
+            # Multiple tabs share one sim: only the first sender past the DT
+            # horizon advances physics, everyone else streams the latest frame.
+            now = time.monotonic()
+            if now - _last_step >= DT:
+                _sim.update(DT)
+                _last_step = now
             await ws.send_bytes(_sim.frame())
+            if _sim.split:
+                await ws.send_bytes(_sim.frame(side_b=True))
             await asyncio.sleep(DT)
 
     async def receiver():
         while True:
             msg = await ws.receive_json()
-            if msg.get("type") == "level":
+            mtype = msg.get("type")
+            if mtype == "level":
                 try:
                     _sim.reload(str(msg["id"]))
                     await ws.send_json({"type": "level", "ok": True, **_sim.status()})
                 except FileNotFoundError:
                     await ws.send_json({"type": "level", "ok": False, "error": f"unknown level {msg.get('id')}"})
+            elif mtype == "params":
+                await ws.send_json({"type": "params", "ok": True, **_sim.apply_params(msg)})
+            elif mtype == "split":
+                _sim.set_split(bool(msg.get("on", True)))
+                await ws.send_json({"type": "split", "ok": True, **_sim.status()})
             else:
                 await ws.send_json({"type": "ack", "received": msg})
 

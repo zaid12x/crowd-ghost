@@ -92,6 +92,9 @@ class PhysicsEngine:
         self.admissions = {r.id: 0 for r in self.fp.rooms}
         self._adm_tick = {r.id: 0 for r in self.fp.rooms}
         self._lam_rate = {r.id: 0.0 for r in self.fp.rooms}
+        # Departures-based utilization estimate (M/M/c: busy fraction ≈ throughput / capacity·mu).
+        self._dep_tick = {r.id: 0 for r in self.fp.rooms}
+        self._rho_hat = {r.id: 0.0 for r in self.fp.rooms}
         self.entrance = next(d for d in self.fp.doors if d.rooms[0] is None)
         self.exits = [d for d in self.fp.doors if d.rooms[1] is None]
         self._next_id = 0
@@ -247,6 +250,11 @@ class PhysicsEngine:
             rate_now = self._adm_tick[k] / dt
             self._lam_rate[k] = (1.0 - alpha) * self._lam_rate[k] + alpha * rate_now
             self._adm_tick[k] = 0
+        for k, r in enumerate(self.fp.rooms):
+            mu = 1.0 / max(r.dwell, 1e-3)
+            served_now = self._dep_tick[r.id] / dt
+            self._rho_hat[r.id] = (1.0 - alpha) * self._rho_hat[r.id] + alpha * (served_now / max(r.capacity * mu, 1e-9))
+            self._dep_tick[r.id] = 0
 
         # door admission rate: width * 1.3 persons/second (single-file flow)
         for d_id, rate in self.door_rate.items():
@@ -360,6 +368,8 @@ class PhysicsEngine:
             if a.state == "dwelling":
                 a.dwell_left -= dt
                 if a.dwell_left <= 0:
+                    if a.room is not None:
+                        self._dep_tick[a.room] += 1
                     if self.evacuation:
                         a.target_door = self._exit_plan(a.room)[0] if a.room is not None else self.exits[0]
                         a.exiting, a.goal_room, a.state = True, None, "walk"
@@ -422,10 +432,15 @@ class PhysicsEngine:
             agents = np.zeros((0, 4), dtype=np.float32)
         rooms = []
         for r in self.fp.rooms:
-            lam = self._lam_rate.get(r.id, 0.0)
-            denom = r.capacity * r.mu
-            rho = lam / denom if denom > 0 else 0.0
-            wq = rho / (denom - lam) if denom > lam > 0 else (999.0 if lam >= denom else 0.0)
+            mu = 1.0 / max(r.dwell, 1e-3)
+            rho = min(max(self._rho_hat[r.id], 0.0), 1.0)
             queue_len = sum(1 for a in self.agents if a.state == "queue" and a.goal_room == r.id)
-            rooms.append([float(queue_len), float(min(max(rho, 0.0), 9.99)), float(wq)])
+            departure_rate = rho * r.capacity * mu
+            if rho >= 0.95 or (queue_len > 0 and departure_rate <= 1e-6):
+                wq = 999.0  # saturated or unmeasurable: no steady state to quote
+            elif queue_len > 0:
+                wq = queue_len / departure_rate  # Little's law on the live estimator
+            else:
+                wq = 0.0
+            rooms.append([float(queue_len), float(rho), float(wq)])
         return agents, np.array(rooms, dtype=np.float32)
